@@ -98,8 +98,9 @@ def merkezi_excel_olustur():
             c.fill = HEADER_FILL
             c.alignment = align_center
 
+        # Tamamen paylaştığın kâğıt formdaki gibi 1'den 7'ye kadar olan takip noktaları
         point_names = [
-            "Ortam Sıcaklığı", "1. Üst Sol Noktası", "2. Üst Orta Noktası", "3. Üst Sağ Noktası",
+            "1. Üst Sol Noktası", "2. Üst Orta Noktası", "3. Üst Sağ Noktası",
             "4. Tam Orta Noktası", "5. Alt Sol Noktası", "6. Alt Orta Noktası", "7. Alt Sağ Noktası"
         ]
         for idx, name in enumerate(point_names, start=16):
@@ -188,4 +189,66 @@ if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_conta
     tarih_str = datetime.now().strftime("%d.%m.%Y")
     
     kirmizi_dolgu = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-    kirmizi_yazi = Font(
+    kirmizi_yazi = Font(name="Arial", size=10, bold=True, color="9C0006")
+    
+    aktif_depo_sayisi = 0
+    
+    for d_name, d_data in st.session_state.fabrika_verisi.items():
+        if len(d_data) >= 9:
+            aktif_depo_sayisi += 1
+            ws = wb[d_name]
+            
+            ortam_sicaklik = float(d_data["Ortam Sıcaklığı"])
+            ws["D3"] = ortam_sicaklik
+            ws["F3"] = d_data.get("Zaman", saat_araligi)
+            ws["G3"] = f"NEM: %{d_data['Ortam Nemi (%)']}"
+            
+            ws["B6"] = float(d_data["1. Üst Sol (Z)"])
+            ws["D6"] = float(d_data["2. Üst Orta (Z)"])
+            ws["F6"] = float(d_data["3. Üst Sağ (Z)"])
+            ws["D9"] = float(d_data["4. TAM ORTA (Z)"])
+            ws["B12"] = float(d_data["5. Alt Sol (Z)"])
+            ws["D12"] = float(d_data["6. Alt Orta (Z)"])
+            ws["F12"] = float(d_data["7. Alt Sağ (Z)"])
+            
+            # Excel tablosundaki satır indeksleri ile session_state'deki anahtarların birebir eşleşmesi
+            mapping = {
+                16: ("1. Üst Sol Noktası", "1. Üst Sol (Z)"),
+                17: ("2. Üst Orta Noktası", "2. Üst Orta (Z)"),
+                18: ("3. Üst Sağ Noktası", "3. Üst Sağ (Z)"),
+                19: ("4. Tam Orta Noktası", "4. TAM ORTA (Z)"),
+                20: ("5. Alt Sol Noktası", "5. Alt Sol (Z)"),
+                21: ("6. Alt Orta Noktası", "6. Alt Orta (Z)"),
+                22: ("7. Alt Sağ Noktası", "7. Alt Sağ (Z)")
+            }
+            
+            for row_idx, (label, state_key) in mapping.items():
+                guncel_deger = float(d_data[state_key])
+                ws.cell(row=row_idx, column=2, value=guncel_deger)
+                ws.cell(row=row_idx, column=4, value=tarih_str)
+                ws.cell(row=row_idx, column=5, value=d_data.get("Zaman", saat_araligi))
+                ws.cell(row=row_idx, column=6, value=d_data.get("Kisi", olcen_kisi))
+                
+                # NET KURAL: Herhangi bir dip noktası, ortam sıcaklığının 2 derece veya daha üstündeyse alarm verir
+                if (guncel_deger - ortam_sicaklik) >= 2.0:
+                    ws.cell(row=row_idx, column=3, value="Yüksek")
+                    ws.cell(row=row_idx, column=3).fill = kirmizi_dolgu
+                    ws.cell(row=row_idx, column=3).font = kirmizi_yazi
+                    ws.cell(row=row_idx, column=2).fill = kirmizi_dolgu
+                    ws.cell(row=row_idx, column=2).font = kirmizi_yazi
+
+    if aktif_depo_sayisi == 0:
+        st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
+    else:
+        cikti_adi = f"Fabrika_Sekmeli_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
+        wb.save(cikti_adi)
+        
+        with open(cikti_adi, "rb") as file:
+            st.download_button(
+                label=f"📥 {aktif_depo_sayisi} DEPOLUK SEKMELİ RAPORU İNDİR",
+                data=file,
+                file_name=cikti_adi,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        st.balloons()
