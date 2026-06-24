@@ -9,16 +9,13 @@ st.set_page_config(page_title="Tohum Depo Ölçüm Merkezi", page_icon="🌾", l
 # --- TEK EXCELDE ÇOKLU SAYFA (DEPO) ÜRETEN MOTOR ---
 def merkezi_excel_olustur():
     wb = openpyxl.Workbook()
-    # İlk açılıştaki boş sayfayı silelim, temiz isimlerle baştan açacağız
     default_sheet = wb.active
     wb.remove(default_sheet)
     
-    # 12 Depo için aynı şablonu ayrı sayfalar olarak oluşturuyoruz
     for d_id in range(1, 13):
         ws = wb.create_sheet(title=f"Depo {d_id}")
         ws.views.sheetView[0].showGridLines = True
 
-        # Tasarım Renkleri
         HEADER_FILL = PatternFill(start_color="2B4C7E", end_color="2B4C7E", fill_type="solid")
         SUBHEADER_FILL = PatternFill(start_color="EAF0F6", end_color="EAF0F6", fill_type="solid")
         Z_CELL_FILL = PatternFill(start_color="F4F7FA", end_color="F4F7FA", fill_type="solid")
@@ -36,7 +33,6 @@ def merkezi_excel_olustur():
         thick_line = Side(border_style="medium", color="2B4C7E")
         border_all_thin = Border(left=thin_line, right=thin_line, top=thin_line, bottom=thin_line)
 
-        # Başlıklar
         ws.merge_cells("A1:G2")
         ws["A1"] = f"DEPO {d_id} - SICAKLIK VE NEM TAKİP RAPORU"
         ws["A1"].font = font_title
@@ -143,4 +139,126 @@ st.write("Tüm depolar tek bir Excel dosyasında toplanıyor kanka!")
 st.subheader("1. Genel Bilgiler")
 col_a, col_b = st.columns(2)
 with col_a:
-    depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?"),
+    # İŞTE BURADAKİ PARANTEZ HATASINI DÜZELTTİM KANKA, ARTIK LİSTE İÇERİDE:
+    depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?", [f"Depo {i}" for i in range(1, 13)])
+    tohum_cinsi = st.selectbox("Tohum Cinsi", ["Buğday", "Arpa", "Mısır", "Ayçiçeği", "Nohut"])
+with col_b:
+    olcen_kisi = st.text_input("Ölçen Kişi", "Ali Sefa")
+    saat_araligi = st.text_input("Saat Aralığı", datetime.now().strftime("%H:%M"))
+
+st.markdown("---")
+
+# --- 2. ADIM: VERİ GİRİŞ ALANI ---
+st.subheader(f"2. {depo_no} Sıcaklık ve Nem Değerleri")
+
+noktalar = [
+    "Ortam Sıcaklığı", "Ortam Nemi (%)",
+    "1. Üst Sol (Z)", "2. Üst Orta (Z)", "3. Üst Sağ (Z)", 
+    "4. TAM ORTA (Z)", 
+    "5. Alt Sol (Z)", "6. Alt Orta (Z)", "7. Alt Sağ (Z)"
+]
+
+secilen_nokta = st.selectbox("Nokta Seçin:", noktalar)
+
+if "Nemi" in secilen_nokta:
+    deger = st.number_input(f"{secilen_nokta} Değeri", min_value=0, max_value=100, value=35, step=1)
+else:
+    deger = st.number_input(f"{secilen_nokta} Değeri (°C)", min_value=15.0, max_value=45.0, value=25.0, step=0.1, format="%.1f")
+
+if st.button(f"📌 {depo_no} Hafızasına Kaydet", use_container_width=True):
+    st.session_state.fabrika_verisi[depo_no][secilen_nokta] = deger
+    st.success(f"✔️ {depo_no} - {secilen_nokta} için {deger} hafızaya alındı!")
+
+# Mevcut Seçili Deponun Durumu
+st.markdown(f"### 📊 {depo_no} Giriş Durumu")
+for n in noktalar:
+    if n in st.session_state.fabrika_verisi[depo_no]:
+        birim = " %" if "Nemi" in n else " °C"
+        st.write(f"✅ **{n}:** {st.session_state.fabrika_verisi[depo_no][n]}{birim}")
+    else:
+        st.write(f"❌ **{n}:** Veri bekleniyor...")
+
+st.markdown("---")
+
+# --- 3. ADIM: TÜM DEPOLARI EXCEL'E AKTAR VE İNDİR ---
+st.subheader("3. Fabrika Raporunu Kapat")
+st.write("Verileri girdiğiniz tüm depolar tek bir dosyada birleşir.")
+
+if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_container_width=True):
+    wb = openpyxl.load_workbook("merkezi_sablon.xlsx")
+    tarih_str = datetime.now().strftime("%d.%m.%Y")
+    
+    kirmizi_dolgu = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+    kirmizi_yazi = Font(name="Arial", size=10, bold=True, color="9C0006")
+    
+    aktif_depo_sayisi = 0
+    
+    for d_name, d_data in st.session_state.fabrika_verisi.items():
+        if len(d_data) == len(noktalar):
+            aktif_depo_sayisi += 1
+            ws = wb[d_name]
+            
+            ws["D3"] = float(d_data["Ortam Sıcaklığı"])
+            ws["F3"] = saat_araligi
+            ws["G3"] = f"NEM: %{d_data['Ortam Nemi (%)']}"
+            
+            ws["B6"] = float(d_data["1. Üst Sol (Z)"])
+            ws["D6"] = float(d_data["2. Üst Orta (Z)"])
+            ws["F6"] = float(d_data["3. Üst Sağ (Z)"])
+            ws["D9"] = float(d_data["4. TAM ORTA (Z)"])
+            ws["B12"] = float(d_data["5. Alt Sol (Z)"])
+            ws["D12"] = float(d_data["6. Alt Orta (Z)"])
+            ws["F12"] = float(d_data["7. Alt Sağ (Z)"])
+            
+            dip_noktalari = [
+                ("1. Üst Sol Noktası", float(d_data["1. Üst Sol (Z)"]), 17),
+                ("2. Üst Orta Noktası", float(d_data["2. Üst Orta (Z)"]), 18),
+                ("3. Üst Sağ Noktası", float(d_data["3. Üst Sağ (Z)"]), 19),
+                ("4. Tam Orta Noktası", float(d_data["4. TAM ORTA (Z)"]), 20),
+                ("5. Alt Sol Noktası", float(d_data["5. Alt Sol (Z)"]), 21),
+                ("6. Alt Orta Noktası", float(d_data["6. Alt Orta (Z)"]), 22),
+                ("7. Alt Sağ Noktası", float(d_data["7. Alt Sağ (Z)"]), 23)
+            ]
+            
+            en_yuksek_deger = max([x[1] for x in dip_noktalari])
+            
+            mapping = {
+                16: ("Ortam Sıcaklığı", "Ortam Sıcaklığı"),
+                17: ("1. Üst Sol Noktası", "1. Üst Sol (Z)"),
+                18: ("2. Üst Orta Noktası", "2. Üst Orta (Z)"),
+                19: ("3. Üst Sağ Noktası", "3. Üst Sağ (Z)"),
+                20: ("4. Tam Orta Noktası", "4. TAM ORTA (Z)"),
+                21: ("5. Alt Sol Noktası", "5. Alt Sol (Z)"),
+                22: ("6. Alt Orta Noktası", "6. Alt Orta (Z)"),
+                23: ("7. Alt Sağ Noktası", "7. Alt Sağ (Z)")
+            }
+            
+            for row_idx, (label, state_key) in mapping.items():
+                guncel_deger = float(d_data[state_key])
+                ws.cell(row=row_idx, column=2, value=guncel_deger)
+                ws.cell(row=row_idx, column=4, value=tarih_str)
+                ws.cell(row=row_idx, column=5, value=saat_araligi)
+                ws.cell(row=row_idx, column=6, value=olcen_kisi)
+                
+                if row_idx != 16 and guncel_deger == en_yuksek_deger:
+                    ws.cell(row=row_idx, column=3, value="Yüksek")
+                    ws.cell(row=row_idx, column=3).fill = kirmizi_dolgu
+                    ws.cell(row=row_idx, column=3).font = kirmizi_yazi
+                    ws.cell(row=row_idx, column=2).fill = kirmizi_dolgu
+                    ws.cell(row=row_idx, column=2).font = kirmizi_yazi
+
+    if aktif_depo_sayisi == 0:
+        st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
+    else:
+        cikti_adi = f"Fabrika_Merkezi_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
+        wb.save(cikti_adi)
+        
+        with open(cikti_adi, "rb") as file:
+            st.download_button(
+                label=f"📥 {aktif_depo_sayisi} DEPOLUK MERKEZİ RAPORU İNDİR",
+                data=file,
+                file_name=cikti_adi,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        st.balloons()
