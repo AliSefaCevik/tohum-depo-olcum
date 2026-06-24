@@ -31,26 +31,21 @@ def mükemmel_excel_olustur():
     border_all_thin = Border(left=thin_line, right=thin_line, top=thin_line, bottom=thin_line)
 
     # 1. BAŞLIK
-    ws.merge_cells("A1:M2")
+    ws.merge_cells("A1:M1")
     ws["A1"] = "FABRİKA GENELİ TOHUM DEPOLARI SICAKLIK VE NEM TAKİP RAPORU"
     ws["A1"].font = font_title
     ws["A1"].fill = HEADER_FILL
     ws["A1"].alignment = align_center
-    for r in [1, 2]:
-        for c in range(1, 14):
-            ws.cell(row=r, column=c).fill = HEADER_FILL
+    for c in range(1, 14):
+        ws.cell(row=1, column=c).fill = HEADER_FILL
 
-    # 2. ÜST KISIM: Z-ŞEMASI GÖRSEL ALANI (İndirilen son deponun görseli buraya çizilir)
+    # 2. ÜST KISIM: Z-ŞEMASI GÖRSEL ALANI
     ws.merge_cells("A3:M3")
     ws["A3"] = "SEÇİLİ DEPONUN GÖRSEL YIĞIN DİP SICAKLIK DAĞILIMI (Z-ŞEMASI)"
     ws["A3"].font = font_sub
     ws["A3"].fill = SUBHEADER_FILL
     ws["A3"].alignment = align_center
 
-    # Sabit Z koordinat şablon hücreleri (Excel üzerinde görsel Z harfi oluşturur)
-    # B5: Üst Sol, G5: Üst Orta, L5: Üst Sağ
-    # G8: Tam Orta
-    # B11: Alt Sol, G11: Alt Orta, L11: Alt Sağ
     z_sablonu = {
         "B5": "1. ÜST SOL", "G5": "2. ÜST ORTA", "L5": "3. ÜST SAĞ",
         "G8": "4. TAM ORTA",
@@ -64,16 +59,15 @@ def mükemmel_excel_olustur():
         ws[cell_ref].fill = Z_CELL_FILL
         ws[cell_ref].border = border_all_thin
         
-        # Etiketini bir üst satıra yazalım
         col_letter = cell_ref[0]
         row_num = int(cell_ref[1:])
         ws[f"{col_letter}{row_num-1}"] = label
         ws[f"{col_letter}{row_num-1}"].font = font_italic
         ws[f"{col_letter}{row_num-1}"].alignment = align_center
 
-    # 3. ALT KISIM: 12 DEPONUN BÜYÜK ÖZET LİSTESİ (Satır 14'ten başlar)
+    # 3. ALT KISIM: ÖZET LİSTE
     ws.merge_cells("A14:M14")
-    ws["A14"] = "TÜM FABRİKA DEPOLARI ANLIK ÖZET TABLOSU"
+    ws["A14"] = "TÜM FABRİKA DEPOLARI ANLIK ÖZET TABLOTSU"
     ws["A14"].font = font_sub
     ws["A14"].fill = SUBHEADER_FILL
     ws["A14"].alignment = align_center
@@ -93,7 +87,6 @@ def mükemmel_excel_olustur():
         cell.border = border_all_thin
     ws.row_dimensions[15].height = 25
 
-    # 12 Depo Satırlarını Hazırla
     for d_id in range(1, 13):
         row_idx = 15 + d_id
         ws.row_dimensions[row_idx].height = 22
@@ -139,7 +132,7 @@ st.markdown("---")
 # --- Z SEÇİM VE DEĞER GİRİŞİ ---
 st.subheader(f"2. {depo_no} Sıcaklık ve Nem Girişi")
 
-# Telefon ekranında Z harfini görsel canlandırmak için buton düzeni
+# Hatalı olan o1 ve o2 kısımları jilet gibi temizlendi kanka:
 st.write("📍 **Depo İçi Hücre Pozisyonları (Z Düzeni):**")
 c1, c2, c3 = st.columns(3)
 with c1: st.info("1. Üst Sol")
@@ -147,9 +140,9 @@ with c2: st.info("2. Üst Orta")
 with c3: st.info("3. Üst Sağ")
 
 c4, c5, c6 = st.columns(3)
-with o1: pass
+with c4: st.write("")
 with c5: st.warning("4. TAM ORTA")
-with o2: pass
+with c6: st.write("")
 
 c7, c8, c9 = st.columns(3)
 with c7: st.info("5. Alt Sol")
@@ -180,7 +173,8 @@ if st.button(f"📌 {depo_no} Verisini Hafızaya Ekle", use_container_width=True
 st.markdown(f"#### 📊 {depo_no} Güncel Durumu")
 for n in noktalar:
     if n in st.session_state.fabrika_verisi[depo_no]:
-        st.write(f"✅ **{n}:** {st.session_state.fabrika_verisi[depo_no][n]}")
+        birim = " %" if "Nemi" in n else " °C"
+        st.write(f"✅ **{n}:** {st.session_state.fabrika_verisi[depo_no][n]}{birim}")
     else:
         st.write(f"❌ **{n}:** Eksik...")
 
