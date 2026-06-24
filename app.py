@@ -133,7 +133,7 @@ if 'fabrika_verisi' not in st.session_state:
     st.session_state.fabrika_verisi = {f"Depo {i}": {} for i in range(1, 13)}
 
 st.title("🌾 Merkezi Tohum Ölçüm İstasyonu")
-st.write("Her depo kendi Excel sekmesinde bağımsız ve düzenli çalışır kanka!")
+st.write("📋 12 Depo Bağımsız Sekmeler Halinde Anlık Takip ve Raporlama Sistemi")
 
 # --- 1. ADIM: GENEL BİLGİLER ---
 st.subheader("1. Genel Bilgiler")
@@ -179,68 +179,6 @@ for n in noktalar:
 
 st.markdown("---")
 
-# --- YENİ ALAN: HAFIZA SIFIRLAMA BUTONU (GÜVENLİK KİLİTLİ) ---
+# --- SİSTEM TEMİZLİK PANELI ---
 st.subheader("🗑️ Sistem Temizlik Paneli")
-st.write("Yarıda kalan veya hatalı tüm depo ölçümlerini tek tıkla silebilirsin kanka.")
-onay_kutusu = st.checkbox("⚠️ 12 deponun tüm geçici hafızasını tamamen silmeyi onaylıyorum.")
-
-if st.button("🔴 TÜM FABRİKA VERİLERİNİ SIFIRLA", use_container_width=True):
-    if onay_kutusu:
-        st.session_state.fabrika_verisi = {f"Depo {i}": {} for i in range(1, 13)}
-        st.warning("🔄 Bütün depoların hafızası tamamen sıfırlandı! Yeni tura başlayabilirsin kanka.")
-        st.rerun()
-    else:
-        st.error("Önce yukarıdaki onay kutusunu işaretlemelisin kanka!")
-
-st.markdown("---")
-
-# --- 3. ADIM: TÜM DEPOLARI EXCEL'E AKTAR VE İNDİR ---
-st.subheader("3. Fabrika Raporunu Kapat")
-st.write("Verileri girdiğiniz tüm depolar Excel'de kendi özel sayfalarına kaydedilir.")
-
-if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_container_width=True):
-    wb = openpyxl.load_workbook("merkezi_sablon.xlsx")
-    tarih_str = datetime.now().strftime("%d.%m.%Y")
-    
-    kirmizi_dolgu = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-    kirmizi_yazi = Font(name="Arial", size=10, bold=True, color="9C0006")
-    
-    aktif_depo_sayisi = 0
-    
-    for d_name, d_data in st.session_state.fabrika_verisi.items():
-        if len(d_data) >= 9:
-            aktif_depo_sayisi += 1
-            ws = wb[d_name]
-            
-            ortam_sicaklik = float(d_data["Ortam Sıcaklığı"])
-            ws["D3"] = ortam_sicaklik
-            ws["F3"] = d_data.get("Zaman", saat_araligi)
-            ws["G3"] = f"NEM: %{d_data['Ortam Nemi (%)']}"
-            
-            ws["B6"] = float(d_data["1. Üst Sol (Z)"])
-            ws["D6"] = float(d_data["2. Üst Orta (Z)"])
-            ws["F6"] = float(d_data["3. Üst Sağ (Z)"])
-            ws["D9"] = float(d_data["4. TAM ORTA (Z)"])
-            ws["B12"] = float(d_data["5. Alt Sol (Z)"])
-            ws["D12"] = float(d_data["6. Alt Orta (Z)"])
-            ws["F12"] = float(d_data["7. Alt Sağ (Z)"])
-            
-            mapping = {
-                16: ("1. Üst Sol Noktası", "1. Üst Sol (Z)"),
-                17: ("2. Üst Orta Noktası", "2. Üst Orta (Z)"),
-                18: ("3. Üst Sağ Noktası", "3. Üst Sağ (Z)"),
-                19: ("4. Tam Orta Noktası", "4. TAM ORTA (Z)"),
-                20: ("5. Alt Sol Noktası", "5. Alt Sol (Z)"),
-                21: ("6. Alt Orta Noktası", "6. Alt Orta (Z)"),
-                22: ("7. Alt Sağ Noktası", "7. Alt Sağ (Z)")
-            }
-            
-            for row_idx, (label, state_key) in mapping.items():
-                guncel_deger = float(d_data[state_key])
-                ws.cell(row=row_idx, column=2, value=guncel_deger)
-                ws.cell(row=row_idx, column=4, value=tarih_str)
-                ws.cell(row=row_idx, column=5, value=d_data.get("Zaman", saat_araligi))
-                ws.cell(row=row_idx, column=6, value=d_data.get("Kisi", olcen_kisi))
-                
-                if (guncel_deger - ortam_sicaklik) >= 2.0:
-                    ws.cell(row=row_idx, column=3, value="Yüksek")
+st.write("Yarıda kalan veya hatal
