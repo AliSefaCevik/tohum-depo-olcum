@@ -98,7 +98,6 @@ def merkezi_excel_olustur():
             c.fill = HEADER_FILL
             c.alignment = align_center
 
-        # Tamamen paylaştığın kâğıt formdaki gibi 1'den 7'ye kadar olan takip noktaları
         point_names = [
             "1. Üst Sol Noktası", "2. Üst Orta Noktası", "3. Üst Sağ Noktası",
             "4. Tam Orta Noktası", "5. Alt Sol Noktası", "6. Alt Orta Noktası", "7. Alt Sağ Noktası"
@@ -180,6 +179,21 @@ for n in noktalar:
 
 st.markdown("---")
 
+# --- YENİ ALAN: HAFIZA SIFIRLAMA BUTONU (GÜVENLİK KİLİTLİ) ---
+st.subheader("🗑️ Sistem Temizlik Paneli")
+st.write("Yarıda kalan veya hatalı tüm depo ölçümlerini tek tıkla silebilirsin kanka.")
+onay_kutusu = st.checkbox("⚠️ 12 deponun tüm geçici hafızasını tamamen silmeyi onaylıyorum.")
+
+if st.button("🔴 TÜM FABRİKA VERİLERİNİ SIFIRLA", use_container_width=True):
+    if onay_kutusu:
+        st.session_state.fabrika_verisi = {f"Depo {i}": {} for i in range(1, 13)}
+        st.warning("🔄 Bütün depoların hafızası tamamen sıfırlandı! Yeni tura başlayabilirsin kanka.")
+        st.rerun()
+    else:
+        st.error("Önce yukarıdaki onay kutusunu işaretlemelisin kanka!")
+
+st.markdown("---")
+
 # --- 3. ADIM: TÜM DEPOLARI EXCEL'E AKTAR VE İNDİR ---
 st.subheader("3. Fabrika Raporunu Kapat")
 st.write("Verileri girdiğiniz tüm depolar Excel'de kendi özel sayfalarına kaydedilir.")
@@ -211,7 +225,6 @@ if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_conta
             ws["D12"] = float(d_data["6. Alt Orta (Z)"])
             ws["F12"] = float(d_data["7. Alt Sağ (Z)"])
             
-            # Excel tablosundaki satır indeksleri ile session_state'deki anahtarların birebir eşleşmesi
             mapping = {
                 16: ("1. Üst Sol Noktası", "1. Üst Sol (Z)"),
                 17: ("2. Üst Orta Noktası", "2. Üst Orta (Z)"),
@@ -229,26 +242,5 @@ if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_conta
                 ws.cell(row=row_idx, column=5, value=d_data.get("Zaman", saat_araligi))
                 ws.cell(row=row_idx, column=6, value=d_data.get("Kisi", olcen_kisi))
                 
-                # NET KURAL: Herhangi bir dip noktası, ortam sıcaklığının 2 derece veya daha üstündeyse alarm verir
                 if (guncel_deger - ortam_sicaklik) >= 2.0:
                     ws.cell(row=row_idx, column=3, value="Yüksek")
-                    ws.cell(row=row_idx, column=3).fill = kirmizi_dolgu
-                    ws.cell(row=row_idx, column=3).font = kirmizi_yazi
-                    ws.cell(row=row_idx, column=2).fill = kirmizi_dolgu
-                    ws.cell(row=row_idx, column=2).font = kirmizi_yazi
-
-    if aktif_depo_sayisi == 0:
-        st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
-    else:
-        cikti_adi = f"Fabrika_Sekmeli_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
-        wb.save(cikti_adi)
-        
-        with open(cikti_adi, "rb") as file:
-            st.download_button(
-                label=f"📥 {aktif_depo_sayisi} DEPOLUK SEKMELİ RAPORU İNDİR",
-                data=file,
-                file_name=cikti_adi,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        st.balloons()
