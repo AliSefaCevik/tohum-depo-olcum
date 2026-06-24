@@ -128,18 +128,17 @@ def merkezi_excel_olustur():
 if not os.path.exists("merkezi_sablon.xlsx"):
     merkezi_excel_olustur()
 
-# --- STREAMLIT SESSİON STATE YAPISI ---
+# --- STREAMLIT SESSION STATE YAPISI ---
 if 'fabrika_verisi' not in st.session_state:
     st.session_state.fabrika_verisi = {f"Depo {i}": {} for i in range(1, 13)}
 
 st.title("🌾 Merkezi Tohum Ölçüm İstasyonu")
-st.write("Tüm depolar tek bir Excel dosyasında toplanıyor kanka!")
+st.write("Her depo kendi Excel sekmesinde bağımsız ve düzenli çalışır kanka!")
 
 # --- 1. ADIM: GENEL BİLGİLER ---
 st.subheader("1. Genel Bilgiler")
 col_a, col_b = st.columns(2)
 with col_a:
-    # İŞTE BURADAKİ PARANTEZ HATASINI DÜZELTTİM KANKA, ARTIK LİSTE İÇERİDE:
     depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?", [f"Depo {i}" for i in range(1, 13)])
     tohum_cinsi = st.selectbox("Tohum Cinsi", ["Buğday", "Arpa", "Mısır", "Ayçiçeği", "Nohut"])
 with col_b:
@@ -167,6 +166,8 @@ else:
 
 if st.button(f"📌 {depo_no} Hafızasına Kaydet", use_container_width=True):
     st.session_state.fabrika_verisi[depo_no][secilen_nokta] = deger
+    st.session_state.fabrika_verisi[depo_no]["Zaman"] = saat_araligi
+    st.session_state.fabrika_verisi[depo_no]["Kisi"] = olcen_kisi
     st.success(f"✔️ {depo_no} - {secilen_nokta} için {deger} hafızaya alındı!")
 
 # Mevcut Seçili Deponun Durumu
@@ -182,9 +183,9 @@ st.markdown("---")
 
 # --- 3. ADIM: TÜM DEPOLARI EXCEL'E AKTAR VE İNDİR ---
 st.subheader("3. Fabrika Raporunu Kapat")
-st.write("Verileri girdiğiniz tüm depolar tek bir dosyada birleşir.")
+st.write("Verileri girdiğiniz tüm depolar Excel'de kendi özel sayfalarına kaydedilir.")
 
-if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_container_width=True):
+if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_container_width=True):
     wb = openpyxl.load_workbook("merkezi_sablon.xlsx")
     tarih_str = datetime.now().strftime("%d.%m.%Y")
     
@@ -194,12 +195,13 @@ if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_conta
     aktif_depo_sayisi = 0
     
     for d_name, d_data in st.session_state.fabrika_verisi.items():
-        if len(d_data) == len(noktalar):
+        # DÜZELTME BURADA: len(noktalar) yerine >= 9 kontrolü getirildi ki eklenen Zaman ve Kişi verileri sistemi kilitlemesin
+        if len(d_data) >= 9:
             aktif_depo_sayisi += 1
             ws = wb[d_name]
             
             ws["D3"] = float(d_data["Ortam Sıcaklığı"])
-            ws["F3"] = saat_araligi
+            ws["F3"] = d_data.get("Zaman", saat_araligi)
             ws["G3"] = f"NEM: %{d_data['Ortam Nemi (%)']}"
             
             ws["B6"] = float(d_data["1. Üst Sol (Z)"])
@@ -237,8 +239,8 @@ if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_conta
                 guncel_deger = float(d_data[state_key])
                 ws.cell(row=row_idx, column=2, value=guncel_deger)
                 ws.cell(row=row_idx, column=4, value=tarih_str)
-                ws.cell(row=row_idx, column=5, value=saat_araligi)
-                ws.cell(row=row_idx, column=6, value=olcen_kisi)
+                ws.cell(row=row_idx, column=5, value=d_data.get("Zaman", saat_araligi))
+                ws.cell(row=row_idx, column=6, value=d_data.get("Kisi", olcen_kisi))
                 
                 if row_idx != 16 and guncel_deger == en_yuksek_deger:
                     ws.cell(row=row_idx, column=3, value="Yüksek")
@@ -250,12 +252,12 @@ if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_conta
     if aktif_depo_sayisi == 0:
         st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
     else:
-        cikti_adi = f"Fabrika_Merkezi_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
+        cikti_adi = f"Fabrika_Sekmeli_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
         wb.save(cikti_adi)
         
         with open(cikti_adi, "rb") as file:
             st.download_button(
-                label=f"📥 {aktif_depo_sayisi} DEPOLUK MERKEZİ RAPORU İNDİR",
+                label=f"📥 {aktif_depo_sayisi} DEPOLUK SEKMELİ RAPORU İNDİR",
                 data=file,
                 file_name=cikti_adi,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
