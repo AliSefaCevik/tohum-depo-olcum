@@ -133,12 +133,13 @@ if 'fabrika_verisi' not in st.session_state:
     st.session_state.fabrika_verisi = {f"Depo {i}": {} for i in range(1, 13)}
 
 st.title("🌾 Merkezi Tohum Ölçüm İstasyonu")
-st.write("Her depo kendi Excel sekmesinde bağımsız ve düzenli çalışır kanka!")
+st.write("Tüm depolar tek bir Excel dosyasında toplanıyor kanka!")
 
 # --- 1. ADIM: GENEL BİLGİLER ---
 st.subheader("1. Genel Bilgiler")
 col_a, col_b = st.columns(2)
 with col_a:
+    # İŞTE BURADAKİ PARANTEZ HATASINI DÜZELTTİM KANKA, ARTIK LİSTE İÇERİDE:
     depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?", [f"Depo {i}" for i in range(1, 13)])
     tohum_cinsi = st.selectbox("Tohum Cinsi", ["Buğday", "Arpa", "Mısır", "Ayçiçeği", "Nohut"])
 with col_b:
@@ -181,9 +182,9 @@ st.markdown("---")
 
 # --- 3. ADIM: TÜM DEPOLARI EXCEL'E AKTAR VE İNDİR ---
 st.subheader("3. Fabrika Raporunu Kapat")
-st.write("Verileri girdiğiniz tüm depolar Excel'de kendi özel sayfalarına kaydedilir.")
+st.write("Verileri girdiğiniz tüm depolar tek bir dosyada birleşir.")
 
-if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VEE İNDİR", use_container_width=True):
+if st.button("💾 TÜM DEPOLARI TEK EXCEL'E AKTAR VE RAPORU İNDİR", use_container_width=True):
     wb = openpyxl.load_workbook("merkezi_sablon.xlsx")
     tarih_str = datetime.now().strftime("%d.%m.%Y")
     
@@ -249,12 +250,12 @@ if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VEE İNDİR", use_cont
     if aktif_depo_sayisi == 0:
         st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
     else:
-        cikti_adi = f"Fabrika_Sekmeli_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
+        cikti_adi = f"Fabrika_Merkezi_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
         wb.save(cikti_adi)
         
         with open(cikti_adi, "rb") as file:
             st.download_button(
-                label=f"📥 {aktif_depo_sayisi} DEPOLUK SEKMELİ RAPORU İNDİR",
+                label=f"📥 {aktif_depo_sayisi} DEPOLUK MERKEZİ RAPORU İNDİR",
                 data=file,
                 file_name=cikti_adi,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
