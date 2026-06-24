@@ -143,4 +143,4 @@ st.write("Tüm depolar tek bir Excel dosyasında toplanıyor kanka!")
 st.subheader("1. Genel Bilgiler")
 col_a, col_b = st.columns(2)
 with col_a:
-    depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?",
+    depo_no = st.selectbox("Hangi Depoyu Ölçüyorsunuz?"),
