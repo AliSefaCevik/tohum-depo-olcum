@@ -166,8 +166,6 @@ else:
 
 if st.button(f"📌 {depo_no} Hafızasına Kaydet", use_container_width=True):
     st.session_state.fabrika_verisi[depo_no][secilen_nokta] = deger
-    st.session_state.fabrika_verisi[depo_no]["Zaman"] = saat_araligi
-    st.session_state.fabrika_verisi[depo_no]["Kisi"] = olcen_kisi
     st.success(f"✔️ {depo_no} - {secilen_nokta} için {deger} hafızaya alındı!")
 
 # Mevcut Seçili Deponun Durumu
@@ -190,77 +188,4 @@ if st.button("💾 TÜM DEPOLARI EXCEL SEKMELERİNE AKTAR VE İNDİR", use_conta
     tarih_str = datetime.now().strftime("%d.%m.%Y")
     
     kirmizi_dolgu = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-    kirmizi_yazi = Font(name="Arial", size=10, bold=True, color="9C0006")
-    
-    aktif_depo_sayisi = 0
-    
-    for d_name, d_data in st.session_state.fabrika_verisi.items():
-        # DÜZELTME BURADA: len(noktalar) yerine >= 9 kontrolü getirildi ki eklenen Zaman ve Kişi verileri sistemi kilitlemesin
-        if len(d_data) >= 9:
-            aktif_depo_sayisi += 1
-            ws = wb[d_name]
-            
-            ws["D3"] = float(d_data["Ortam Sıcaklığı"])
-            ws["F3"] = d_data.get("Zaman", saat_araligi)
-            ws["G3"] = f"NEM: %{d_data['Ortam Nemi (%)']}"
-            
-            ws["B6"] = float(d_data["1. Üst Sol (Z)"])
-            ws["D6"] = float(d_data["2. Üst Orta (Z)"])
-            ws["F6"] = float(d_data["3. Üst Sağ (Z)"])
-            ws["D9"] = float(d_data["4. TAM ORTA (Z)"])
-            ws["B12"] = float(d_data["5. Alt Sol (Z)"])
-            ws["D12"] = float(d_data["6. Alt Orta (Z)"])
-            ws["F12"] = float(d_data["7. Alt Sağ (Z)"])
-            
-            dip_noktalari = [
-                ("1. Üst Sol Noktası", float(d_data["1. Üst Sol (Z)"]), 17),
-                ("2. Üst Orta Noktası", float(d_data["2. Üst Orta (Z)"]), 18),
-                ("3. Üst Sağ Noktası", float(d_data["3. Üst Sağ (Z)"]), 19),
-                ("4. Tam Orta Noktası", float(d_data["4. TAM ORTA (Z)"]), 20),
-                ("5. Alt Sol Noktası", float(d_data["5. Alt Sol (Z)"]), 21),
-                ("6. Alt Orta Noktası", float(d_data["6. Alt Orta (Z)"]), 22),
-                ("7. Alt Sağ Noktası", float(d_data["7. Alt Sağ (Z)"]), 23)
-            ]
-            
-            en_yuksek_deger = max([x[1] for x in dip_noktalari])
-            
-            mapping = {
-                16: ("Ortam Sıcaklığı", "Ortam Sıcaklığı"),
-                17: ("1. Üst Sol Noktası", "1. Üst Sol (Z)"),
-                18: ("2. Üst Orta Noktası", "2. Üst Orta (Z)"),
-                19: ("3. Üst Sağ Noktası", "3. Üst Sağ (Z)"),
-                20: ("4. Tam Orta Noktası", "4. TAM ORTA (Z)"),
-                21: ("5. Alt Sol Noktası", "5. Alt Sol (Z)"),
-                22: ("6. Alt Orta Noktası", "6. Alt Orta (Z)"),
-                23: ("7. Alt Sağ Noktası", "7. Alt Sağ (Z)")
-            }
-            
-            for row_idx, (label, state_key) in mapping.items():
-                guncel_deger = float(d_data[state_key])
-                ws.cell(row=row_idx, column=2, value=guncel_deger)
-                ws.cell(row=row_idx, column=4, value=tarih_str)
-                ws.cell(row=row_idx, column=5, value=d_data.get("Zaman", saat_araligi))
-                ws.cell(row=row_idx, column=6, value=d_data.get("Kisi", olcen_kisi))
-                
-                if row_idx != 16 and guncel_deger == en_yuksek_deger:
-                    ws.cell(row=row_idx, column=3, value="Yüksek")
-                    ws.cell(row=row_idx, column=3).fill = kirmizi_dolgu
-                    ws.cell(row=row_idx, column=3).font = kirmizi_yazi
-                    ws.cell(row=row_idx, column=2).fill = kirmizi_dolgu
-                    ws.cell(row=row_idx, column=2).font = kirmizi_yazi
-
-    if aktif_depo_sayisi == 0:
-        st.error("En az 1 deponun tüm ölçümlerini tam doldurup hafızaya kaydetmelisin kanka!")
-    else:
-        cikti_adi = f"Fabrika_Sekmeli_Olcum_Raporu_{tarih_str.replace('.', '_')}.xlsx"
-        wb.save(cikti_adi)
-        
-        with open(cikti_adi, "rb") as file:
-            st.download_button(
-                label=f"📥 {aktif_depo_sayisi} DEPOLUK SEKMELİ RAPORU İNDİR",
-                data=file,
-                file_name=cikti_adi,
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        st.balloons()
+    kirmizi_yazi = Font(
